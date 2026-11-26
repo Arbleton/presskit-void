@@ -3,6 +3,26 @@
 (() => {
   const nav = document.getElementById('sections');
   const header = nav.closest('header');
+  const trigger = header.querySelector('.menu-trigger');
+  const compact = matchMedia('(max-width: 900px)');
+  function setMenu(open) {
+    trigger.setAttribute('aria-expanded', String(open));
+    header.classList.toggle('menu-open', open);
+  }
+  trigger.onclick = () => setMenu(!header.classList.contains('menu-open'));
+  document.addEventListener('pointerdown', event => {
+    if (!header.contains(event.target) && header.classList.contains('menu-open')) setMenu(false);
+  });
+  header.addEventListener('focusout', event => {
+    if (event.relatedTarget && !header.contains(event.relatedTarget)) setMenu(false);
+  });
+  header.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && header.classList.contains('menu-open')) {
+      setMenu(false);
+      trigger.focus();
+    }
+  });
+  compact.addEventListener('change', () => setMenu(false));
   const links = [...nav.querySelectorAll('a')];
   const sections = links.map(link => document.querySelector(link.hash));
   let sectionTops = [];
@@ -12,6 +32,7 @@
   let layoutFrame = 0;
 
   function paintRail() {
+    if (compact.matches) return;
     const link = inspected || destination || links[active];
     const bounds = nav.getBoundingClientRect();
     nav.classList.toggle('overflow-left', nav.scrollLeft > 2);
@@ -28,6 +49,7 @@
   }
 
   function revealLink(link) {
+    if (compact.matches) return;
     if (!link || nav.scrollWidth <= nav.clientWidth) return;
     const box = link.getBoundingClientRect();
     const bounds = nav.getBoundingClientRect();
@@ -80,6 +102,12 @@
   for (const link of links) {
     link.addEventListener('click', event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      if (compact.matches) {
+        setMenu(false);
+        const target = document.querySelector(link.hash);
+        target.tabIndex = -1;
+        target.focus({preventScroll:true});
+      }
       destination = link === links[active] ? null : link;
       revealLink(link);
       paintRail();
