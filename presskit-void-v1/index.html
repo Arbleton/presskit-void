@@ -2,7 +2,9 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#10110f">
+  <link rel="icon" type="image/png" sizes="64x64" href="assets/web/void-icon.png">
   <title>VOID Records | Presskit</title>
   <meta name="description" content="VOID Records et Void X Series, Paris. Curations de scènes, catalogue vinyle et digital, podcasts et résidents.">
   <meta property="og:type" content="website">
@@ -12,11 +14,13 @@
   <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="assets/web/presskit.jpg">
-
-
-
   <link rel="preload" href="assets/fonts/barlowcondensed.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/style.css">
+  <script defer src="js/data.js"></script>
+  <script defer src="js/visuals.js"></script>
+  <script defer src="js/player.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/navigation.js"></script>
 </head>
 <body>
 
@@ -32,33 +36,41 @@
 
   <audio id="audio-engine" preload="none"></audio>
 
+  <a class="skip-nav" href="#main-content" data-i18n="skipNav">Aller au contenu</a>
   <header>
     <div class="header-right">
 
-      <button class="lang-switch" id="menu-toggle" aria-expanded="false" aria-controls="sections">Menu</button>
       <nav id="sections">
         <a href="#events"><span data-i18n="nav_events">Dates</span> <span class="nav-num">≈30</span></a>
         <a href="#catalogue"><span data-i18n="nav_releases">Sorties</span> <span class="nav-num" id="nav-count-releases">17</span></a>
         <a href="#podcasts"><span data-i18n="nav_podcasts">Podcasts</span> <span class="nav-num">71</span></a>
         <a href="#roster"><span data-i18n="nav_roster">Roster</span> <span class="nav-num">07</span></a>
-        <a href="#gallery"><span data-i18n="nav_gallery">Galerie</span></a>
+        <a href="#gallery"><span data-i18n="nav_gallery">Archives live</span></a>
         <a href="#about"><span data-i18n="nav_about">À propos</span></a>
       </nav>
-      <button class="lang-switch" id="lang-toggle" lang="en">FR / EN</button>
+      <button class="lang-switch" id="lang-toggle" type="button" lang="en" aria-label="Switch to English">
+        <span class="lang-fr" aria-hidden="true">FR</span><i aria-hidden="true"></i><span class="lang-en" aria-hidden="true">EN</span>
+      </button>
     </div>
-    <div class="nav-rail" aria-hidden="true"></div>
+    <div class="nav-rail" aria-hidden="true">
+      <svg viewBox="0 0 112 12" preserveAspectRatio="none" focusable="false"><path d="M0 11.5H22C43 11.5 42 4 57 4S73 11.5 94 11.5H112"/></svg>
+    </div>
   </header>
 
   <!-- HERO SECTION -->
-  <main>
+  <main id="main-content" tabindex="-1">
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero-copy">
       <p class="imprint" data-i18n="hero_tag">Label indépendant · Paris, 2017</p>
-      <h1 id="hero-title"><span aria-hidden="true">Void Records</span><img class="hero-wordmark" src="assets/web/void-wordmark.webp" width="1800" height="603" alt="VOID Records" fetchpriority="high"></h1>
+      <h1 id="hero-title"><span aria-hidden="true">Void Records</span><img class="hero-wordmark" src="assets/web/void-wordmark.webp"
+        srcset="assets/web/void-wordmark-800.webp 800w, assets/web/void-wordmark.webp 1800w"
+        sizes="(max-width: 640px) calc(100vw - 40px), min(44vw, 680px)"
+        width="1800" height="603" alt="VOID Records" fetchpriority="high"></h1>
       <p class="hero-desc" data-i18n="hero_desc">VOID défend une techno mentale et texturée. Sur Void X Series, le groove se déplace entre minimale, micro-house et électro. Ces deux lignes traversent le catalogue et se croisent derrière les platines.</p>
       <div class="hero-quick-nav">
         <a href="#events" data-i18n="btn_events">Les dates ↓</a>
         <a href="mailto:contact.voidrecords@gmail.com" data-i18n="booking">Booking ↗</a>
+        <a class="mobile-portfolio" href="assets/Portfolio Void Records.pdf" download>Portfolio PDF ↓</a>
       </div>
     </div>
 
@@ -98,9 +110,17 @@
     </div>
 
     <div class="programme">
-      <svg class="programme-trace" aria-hidden="true" focusable="false"><path id="date-trace"/></svg>
+      <svg class="programme-trace" aria-hidden="true" focusable="false">
+        <path id="date-trace" pathLength="1"/>
+        <use class="trace-pulse" href="#date-trace"/>
+      </svg>
       <div id="event-grid"></div>
-      <button id="event-preview" class="event-preview" type="button"></button>
+      <button id="event-preview" class="event-preview" type="button" aria-haspopup="dialog">
+        <span class="preview-plate">
+          <span class="poster-stage"></span>
+          <span class="poster-note"></span>
+        </span>
+      </button>
     </div>
     <div class="curation-manifesto">
       <h3 data-i18n="ethos_title">La programmation</h3>
@@ -132,6 +152,7 @@
     </div>
 
     <div class="grid" id="release-grid"></div>
+    <button type="button" id="catalogue-expand" aria-controls="release-grid" hidden></button>
   </section>
 
   <!-- 03. PODCAST SERIES (3 CURATED EXAMPLES WITH EMBEDDED PLAYER) -->
@@ -171,7 +192,7 @@
       <div class="section-title-group">
         <h2 data-i18n="sec_gallery_title">Archives live</h2>
       </div>
-      <div class="carousel-controls">
+      <div class="carousel-controls" hidden>
         <span class="carousel-counter" aria-live="polite" id="carousel-counter">01 / 06</span>
         <button class="carousel-btn" id="carousel-prev">←</button>
         <button class="carousel-btn" id="carousel-next">→</button>
@@ -204,7 +225,7 @@
         <div><strong data-i18n="struct">Structure</strong> <span data-i18n="meta_struct">association loi 1901 (fondée en 2017, Paris)</span></div>
         <div><strong data-i18n="cadre">Cadre</strong> <span data-i18n="meta_license">licence d'entrepreneur du spectacle & affilié CNM</span></div>
         <div><strong data-i18n="grants">Soutiens</strong> <span data-i18n="meta_grants">lauréat Île des Chances (Région IDF x KKBB) · Kiosque en Fête (Ville de Paris, 3 éditions)</span></div>
-        <div><strong>Contact</strong> <a href="mailto:contact.voidrecords@gmail.com" style="color:var(--text); text-decoration:none;">contact.voidrecords@gmail.com</a></div>
+        <div><strong>Contact</strong> <a href="mailto:contact.voidrecords@gmail.com">contact.voidrecords@gmail.com</a></div>
         <div><strong data-i18n="phone">Téléphone</strong> <a href="tel:+33751612448">07 51 61 24 48</a></div>
 
         <div class="about-links">
@@ -220,26 +241,25 @@
   </main>
 
   <!-- STICKY AUDIO PLAYER -->
-  <div class="sticky-player" id="player">
-    <div class="player-left">
-      <button class="btn-play" id="btn-play">▶</button>
-      <div class="track-info">
-        <div class="track-label"><label for="cur-track" data-i18n="choosePreview">Choisir un extrait</label><span id="cur-cat" role="status"></span></div>
-        <select class="track-title" id="cur-track"></select>
-      </div>
+  <section class="sticky-player" id="player" aria-label="Lecteur d’extraits">
+    <button type="button" class="btn-play" id="btn-play" aria-label="Écouter"><i aria-hidden="true"></i></button>
+    <div class="track-picker">
+      <button id="cur-track" type="button" aria-expanded="false" aria-controls="track-options">
+        <span class="track-kicker"><span data-i18n="choosePreview">Choisir un extrait</span><span id="cur-cat"></span></span>
+        <span class="track-name" id="cur-title"></span>
+        <i class="track-chevron" aria-hidden="true"></i>
+      </button>
+      <ul class="track-options" id="track-options" hidden></ul>
     </div>
-    <div class="player-center">
+    <div class="player-timeline">
       <span class="time-stamp" id="time-cur">0:00</span>
       <input id="seek" type="range" min="0" max="100" value="0" step="0.1" disabled>
-      <div class="player-end">
-        <span class="time-stamp" id="time-dur">0:00</span>
-        <button type="button" id="btn-next"><span data-i18n="nextPreview">Suivant</span><i aria-hidden="true"></i></button>
-      </div>
+      <span class="time-stamp" id="time-dur">0:00</span>
     </div>
-    <div class="player-right">
-      <canvas id="player-spectrum" width="96" height="30" aria-hidden="true"></canvas>
-    </div>
-  </div>
+    <button type="button" id="btn-next"><span data-i18n="nextPreview">Suivant</span><i aria-hidden="true"></i></button>
+    <canvas id="player-spectrum" width="96" height="30" aria-hidden="true"></canvas>
+    <span class="player-status" id="player-status" role="status"></span>
+  </section>
 
   <!-- MODAL FOCUS -->
   <dialog class="modal" id="modal" aria-labelledby="modal-title">
@@ -273,9 +293,5 @@
       </div>
     </div>
   </dialog>
-  <script src="assets/preview-spectra.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/visuals.js"></script>
-  <script src="js/app.js"></script>
 </body>
 </html>

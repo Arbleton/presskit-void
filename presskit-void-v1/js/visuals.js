@@ -1,305 +1,257 @@
-(function generateMineralGrain() {
-  const gCanvas = document.createElement('canvas');
-  gCanvas.width = 160; gCanvas.height = 160;
-  const gCtx = gCanvas.getContext('2d');
-  const imgData = gCtx.createImageData(160, 160);
-  const data = imgData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const val = Math.random() * 255;
-    data[i] = val; data[i + 1] = val; data[i + 2] = val;
-    data[i + 3] = Math.random() > 0.45 ? 180 : 35;
-  }
-  gCtx.putImageData(imgData, 0, 0);
-  document.getElementById('mineral-grain').style.backgroundImage = `url(${gCanvas.toDataURL('image/png')})`;
-})();
+'use strict';
 
-const eqCanvas = document.getElementById('ableton-eq-bg');
-const eqCtx = eqCanvas.getContext('2d');
-let w, h, eqTime = 0, scrollY = 0, mouseX = 0.5, mouseY = 0.5;
+// Point d’entrée du lecteur. Le reste du moteur reste propre à ses deux canevas.
+const prepareAnalysis = (() => {
+  const canvas = document.getElementById('ableton-eq-bg');
+  const ctx = canvas.getContext('2d');
+  const ribbon = document.getElementById('player-spectrum').getContext('2d');
+  if (!ctx || !ribbon) return () => {};
 
-const motion = matchMedia('(prefers-reduced-motion: reduce)');
-const pointer = matchMedia('(hover: hover) and (pointer: fine) and (min-width: 861px)');
-const dawCursor = document.getElementById('daw-cursor');
-const dawReadout = document.getElementById('daw-readout');
-const mini = document.getElementById('player-spectrum').getContext('2d');
-const media = document.getElementById('audio-engine');
-let frame, lastDraw = -Infinity;
-let cursorVisible = false;
-let spectrum, levels, lastSpectrumTime = NaN;
-function frequency(position) { return 30 * Math.pow(10000 / 30, position); }
+  const audio = document.getElementById('audio-engine');
+  const cursor = document.getElementById('daw-cursor');
+  const readout = document.getElementById('daw-readout');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const finePointer = matchMedia('(hover: hover) and (pointer: fine) and (min-width: 861px)');
+  const frequencies = [30, 100, 300, 1000, 3000, 10000];
+  const frequencyRange = Math.log(10000 / 30);
+  let width = 0, height = 0, scale = 0;
+  let phase = 0, previousTime = null;
+  let scrollPosition = window.scrollY, pointerX = .5, pointerY = .5;
+  let frame = 0, timer = 0, dirtyTop = 0, dirtyBottom = 0;
+  let bandFill, spectrum, levels, lastAudioTime = NaN, ribbonWasPlaying = null;
 
-// Bandes FFT mesurées sur les MP3 livrés au navigateur, y compris en lecture locale.
-function prepareAnalysis(next) {
-  if (spectrum === next) return;
-  spectrum = next;
-  if (next && !next.values) next.values = atob(next.encoded);
-  levels = next ? new Float32Array(next.bands) : null;
-  lastSpectrumTime = NaN;
-}
-function sampleSpectrum(time) {
-  const { bands, fps, values } = spectrum;
-  const last = values.length / bands - 1;
-  const position = Math.min(last, Math.max(0, time * fps));
-  const row = Math.floor(position);
-  const mix = position - row;
-  const dt = time - lastSpectrumTime;
-  for (let i = 0; i < bands; i++) {
-    const first = values.charCodeAt(row * bands + i);
-    const second = values.charCodeAt(Math.min(last, row + 1) * bands + i);
-    const target = (first + mix * (second - first)) / 255;
-    const tau = target > levels[i] ? .018 : .095;
-    const gain = dt >= 0 && dt < .2 ? -Math.expm1(-dt / tau) : 1;
-    levels[i] += gain * (target - levels[i]);
-  }
-  lastSpectrumTime = time;
-}
-function energy(position) {
-  if (!levels || media.paused) return 0;
-  const bin = Math.max(0, Math.min(levels.length - 1, position * levels.length - .5));
-  const left = Math.floor(bin);
-  return levels[left] + (bin - left) * (levels[Math.min(left + 1, levels.length - 1)] - levels[left]);
-}
-media.addEventListener('seeking', () => { lastSpectrumTime = NaN; });
-// Deux contours légers partagent la même enveloppe spectrale que le fond.
-function drawPlayerRibbon(active) {
-  const width = 96, height = 30, middle = height / 2;
-  mini.clearRect(0, 0, width, height);
-  const contour = new Path2D();
-  const upper = new Path2D();
-  const lower = [];
-  contour.moveTo(2, middle);
-  upper.moveTo(2, middle);
-  for (let x = 2; x <= width - 2; x += 2) {
-    const t = (x - 2) / (width - 4);
-    const envelope = (energy(Math.max(0, t - .045)) + 2 * energy(t) + energy(Math.min(1, t + .045))) / 4;
-    const taper = Math.sin(Math.PI * t);
-    const depth = taper * (.6 + envelope * 14);
-    const top = middle - depth;
-    upper.lineTo(x, top);
-    contour.lineTo(x, top);
-    lower.push(middle + depth * (.25 + .25 * t));
-  }
-  for (let i = lower.length - 1; i >= 0; i--) contour.lineTo(2 + 2 * i, lower[i]);
-  contour.closePath();
-  mini.fillStyle = active ? 'rgba(217,239,154,.12)' : 'rgba(184,193,169,.07)';
-  mini.fill(contour);
-  mini.lineWidth = .8;
-  mini.strokeStyle = active ? 'rgba(217,239,154,.43)' : '#73786a';
-  mini.stroke(contour);
-  mini.strokeStyle = active ? '#d9ef9a' : '#8c9284';
-  mini.stroke(upper);
-}
-function resizeEq() {
-  const bounds = eqCanvas.getBoundingClientRect();
-  w = Math.max(1, bounds.width);
-  h = Math.max(1, bounds.height);
-  const scale = Math.min(devicePixelRatio || 1, 1.5);
-  mini.canvas.width = Math.round(96 * scale);
-  mini.canvas.height = Math.round(30 * scale);
-  mini.setTransform(scale, 0, 0, scale, 0, 0);
-  eqCanvas.width = Math.round(w * scale);
-  eqCanvas.height = Math.round(h * scale);
-  eqCtx.setTransform(scale, 0, 0, scale, 0, 0);
-  restartDrawing();
-}
-window.addEventListener('resize', resizeEq);
-window.addEventListener('scroll', () => {
-  scrollY = window.scrollY;
-  if (media.paused && !pointer.matches && !motion.matches && !document.hidden && !frame)
-    frame = requestAnimationFrame(() => { frame = 0; drawAbletonEqBackground(); });
-}, { passive: true });
-document.addEventListener('pointermove', e => {
-  if (!pointer.matches || motion.matches || e.pointerType !== 'mouse') return;
-  mouseX = Math.min(1, Math.max(0, e.clientX / w));
-  mouseY = Math.min(1, Math.max(0, e.clientY / h));
-  cursorVisible = !e.target.closest('header, button, a, input, main p, h1, h2, h3, dialog, .sticky-player, details, .about-meta');
-  dawCursor.style.visibility = cursorVisible ? 'visible' : 'hidden';
-  if (!cursorVisible) return;
-  dawCursor.style.transform = 'translate3d(' + (e.clientX + 12) + 'px,' + (e.clientY + 12) + 'px,0)';
-}, {passive: true});
-document.addEventListener('pointerleave', () => { dawCursor.style.visibility = 'hidden'; });
-// Repères fréquentiels logarithmiques type Ableton EQ Eight
-const freqMarkers = [30, 100, 300, 1000, 3000, 10000].map(hz => ({
-  pos: Math.log(hz / 30) / Math.log(10000 / 30),
-  label: hz >= 1000 ? hz / 1000 + ' kHz' : hz + ' Hz'
-}));
-
-function drawAbletonEqBackground() {
-  const isAudioActive = !media.paused && !!spectrum;
-  if (isAudioActive) sampleSpectrum(media.currentTime);
-  eqCtx.clearRect(0, 0, w, h);
-  eqTime += isAudioActive ? 0.018 : 0.005;
-  const amp = Math.min(1.8, h / 250) * (isAudioActive ? 1.2 : 0.9);
-  const sweep = Math.sin(scrollY / Math.max(h, 1) * 1.7) * h * .09;
-
-  // 1. Grille logarithmique verticale & lignes dB horizontales (style EQ Eight)
-  eqCtx.lineWidth = 1;
-  freqMarkers.forEach(m => {
-    const x = w * m.pos;
-    eqCtx.beginPath();
-    eqCtx.strokeStyle = 'rgba(220, 231, 211, 0.14)';
-    eqCtx.moveTo(x, 0);
-    eqCtx.lineTo(x, h);
-    eqCtx.stroke();
-
-    eqCtx.fillStyle = 'rgba(227, 233, 222, 0.76)';
-    eqCtx.font = '9px monospace';
-    eqCtx.fillText(m.label, Math.min(w - 48, x + 6), h - 74);
-  });
-
-  const dbLevels = [0.25, 0.5, 0.75];
-  dbLevels.forEach((lvl, idx) => {
-    const y = h * lvl;
-    eqCtx.beginPath();
-    eqCtx.strokeStyle = idx === 1 ? 'rgba(230, 235, 218, 0.2)' : 'rgba(230, 235, 218, 0.11)';
-    eqCtx.moveTo(0, y);
-    eqCtx.lineTo(w, y);
-    eqCtx.stroke();
-  });
-
-  if (isAudioActive) {
-    // Une même enveloppe fréquentielle alimente le fond et les barres du lecteur.
-    const floor = h * .91;
-    const getY = position => floor - energy(position) * h * .79;
-    eqCtx.beginPath();
-    eqCtx.moveTo(0, getY(0));
-    let prevX = 0, prevY = getY(0);
-    for (let i = 0; i < spectrum.bands; i++) {
-      const pos = (i + .5) / spectrum.bands;
-      const x = w * pos, y = getY(pos);
-      eqCtx.quadraticCurveTo(prevX, prevY, (prevX + x) / 2, (prevY + y) / 2);
-      prevX = x; prevY = y;
-    }
-    eqCtx.quadraticCurveTo(prevX, prevY, w, getY(1));
-    eqCtx.strokeStyle = '#d5f59d';
-    eqCtx.lineWidth = 2;
-    eqCtx.stroke();
-    eqCtx.lineTo(w, floor); eqCtx.lineTo(0, floor); eqCtx.closePath();
-    eqCtx.fillStyle = 'rgba(157,198,106,.12)';
-    eqCtx.fill();
-  } else {
-    // 2. Nœuds de filtres résonants (4 bandes EQ dynamiques)
-    const nodes = [
-      {
-        num: '1',
-        x: w * (0.16 + Math.sin(eqTime * 0.7) * 0.05),
-        y: h * 0.52 + Math.cos(eqTime * 0.9) * (42 * amp),
-        color: '#b3c497'
-      },
-      {
-        num: '2',
-        x: w * (0.41 + Math.cos(eqTime * 0.5) * 0.06),
-        y: h * 0.46 + Math.sin(eqTime * 0.8 + scrollY * 0.002) * (55 * amp),
-        color: '#d8ecb3'
-      },
-      {
-        num: '3',
-        x: w * (0.66 + (mouseX - 0.5) * 0.08),
-        y: h * 0.5 + (mouseY - 0.5) * 70 + Math.cos(eqTime * 1.1) * (35 * amp),
-        color: '#d8ecb3'
-      },
-      {
-        num: '4',
-        x: w * (0.86 + Math.sin(eqTime * 0.6) * 0.04),
-        y: h * 0.48 + Math.sin(eqTime * 1.3) * (40 * amp),
-        color: '#e2e9d9'
+  // Les axes sont une image de fond. Seules les courbes sont repeintes entre deux images.
+  function makeGrid() {
+    const lines = [];
+    const labels = [];
+    for (const hz of frequencies) {
+      const x = Math.round(width * Math.log(hz / 30) / frequencyRange);
+      lines.push('M' + x + ' 0v' + height);
+      if (width > 640) {
+        const last = hz === frequencies[frequencies.length - 1];
+        const label = hz >= 1000 ? hz / 1000 + ' kHz' : hz + ' Hz';
+        labels.push('<text x="' + (last ? width - 8 : x + 6) + '" y="' + (height - 78) +
+          '" text-anchor="' + (last ? 'end' : 'start') + '">' + label + '</text>');
       }
-    ];
-
-    // Fonction d'évaluation de la courbe de réponse fréquentielle globale
-    function evalEqCurve(x) {
-      let y = h * 0.52;
-      // Harmoniques de type Spectrum
-      y += Math.sin(x * 0.003 + eqTime) * (18 * amp);
-      y += Math.cos(x * 0.008 - eqTime * 1.3) * (9 * amp);
-      // Influence des 4 bandes résonantes (cloches gaussiennes)
-      nodes.forEach(n => {
-        const dist = (x - n.x) / (w * 0.13);
-        const bell = Math.exp(-(dist * dist));
-        y += (n.y - h * 0.52) * bell;
-      });
-      return y + sweep;
     }
-
-    // 3. Tracé de l'onde secondaire (Spectrum harmonique rapide)
-    eqCtx.beginPath();
-    eqCtx.strokeStyle = 'rgba(197, 212, 186, .49)';
-    eqCtx.lineWidth = 1;
-    for (let x = 0; x <= w; x += 10) {
-      const yHarm = evalEqCurve(x)
-        + Math.sin(x * 0.025 - eqTime * 3.2) * (11 * amp)
-        + Math.cos(x * 0.04 + eqTime * 2.1) * (6 * amp);
-      if (x === 0) eqCtx.moveTo(x, yHarm);
-      else eqCtx.lineTo(x, yHarm);
+    for (const level of [.25, .5, .75]) {
+      const y = Math.round(height * level);
+      lines.push('M0 ' + y + 'h' + width);
+      // Sur téléphone, la graduation reste dans la marge, hors des légendes et des contrôles.
+      if (width <= 640) labels.push('<text x="' + (width - 3) + '" y="' + (y - 4) +
+        '" text-anchor="end">' + (12 - level * 36) + '</text>');
     }
-    eqCtx.stroke();
-
-    // 4. Courbe principale EQ Eight + remplissage dégradé sous la courbe
-    eqCtx.beginPath();
-    for (let x = 0; x <= w; x += 12) {
-      const y = evalEqCurve(x);
-      if (x === 0) eqCtx.moveTo(x, y);
-      else eqCtx.lineTo(x, y);
-    }
-    eqCtx.strokeStyle = 'rgba(213, 245, 157, .93)';
-    eqCtx.lineWidth = 2.2;
-    eqCtx.stroke();
-
-    // Remplissage sous la courbe EQ
-    eqCtx.lineTo(w, h);
-    eqCtx.lineTo(0, h);
-    eqCtx.closePath();
-    const fillGrad = eqCtx.createLinearGradient(0, h * 0.3, 0, h);
-    fillGrad.addColorStop(0, 'rgba(157, 198, 106, .17)');
-    fillGrad.addColorStop(0.6, 'rgba(230, 46, 61, 0.025)');
-    fillGrad.addColorStop(1, 'rgba(6, 7, 9, 0)');
-    eqCtx.fillStyle = fillGrad;
-    eqCtx.fill();
-
-    // 5. Dessin des poignées de filtres numérotées (1, 2, 3, 4)
-    nodes.forEach(n => {
-      const cy = evalEqCurve(n.x);
-      // Halo externe
-      eqCtx.beginPath();
-      eqCtx.arc(n.x, cy, 11, 0, Math.PI * 2);
-      eqCtx.fillStyle = 'rgba(6, 7, 9, 0.75)';
-      eqCtx.fill();
-      eqCtx.strokeStyle = n.color;
-      eqCtx.lineWidth = 1.2;
-      eqCtx.stroke();
-
-      // Numéro de bande EQ
-      eqCtx.fillStyle = n.color;
-      eqCtx.font = 'bold 9px monospace';
-      eqCtx.textAlign = 'center';
-      eqCtx.textBaseline = 'middle';
-      eqCtx.fillText(n.num, n.x, cy);
-    });
-    eqCtx.textAlign = 'start';
-
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + width + '" height="' + height + '">' +
+      '<path d="' + lines.join(' ') + '" stroke="#dce7d3" stroke-opacity=".14" fill="none"/>' +
+      '<g font-family="monospace" font-size="' + (width <= 640 ? 8 : 9) + '" fill="#dce7d3" fill-opacity=".6">' +
+      labels.join('') + '</g></svg>';
+    canvas.style.backgroundImage = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
   }
-  drawPlayerRibbon(isAudioActive);
-  if (cursorVisible) {
-    const hz = frequency(mouseX);
+
+  // Les six points décrivent la réponse des quatre filtres. Les deux points hors cadre
+  // permettent aux courbes d’entrer et de sortir sans cassure au bord de l’écran.
+  const anchors = [-.11, .14, .39, .63, .85, 1.11].map(x => ({home: x, x: 0, y: 0, echo: 0}));
+  function traceResponse(key) {
+    const path = new Path2D();
+    path.moveTo(anchors[0].x, anchors[0][key]);
+    for (let i = 1; i < anchors.length; i++) {
+      const a = anchors[i - 1], b = anchors[i];
+      const before = anchors[Math.max(0, i - 2)], after = anchors[Math.min(anchors.length - 1, i + 1)];
+      const step = (b.x - a.x) / 3;
+      path.bezierCurveTo(
+        a.x + step, a[key] + step * (b[key] - before[key]) / (b.x - before.x),
+        b.x - step, b[key] - step * (after[key] - a[key]) / (after.x - a.x),
+        b.x, b[key]);
+    }
+    return path;
+  }
+  function drawAmbient() {
+    const travel = scrollPosition / height;
+    const amplitude = Math.min(100, height * .113);
+    const baseline = height * (.54 + .065 * Math.sin(travel * 1.14 + phase * .27));
+    let top = height, bottom = 0;
+    for (let i = 0; i < anchors.length; i++) {
+      const node = anchors[i];
+      node.x = width * (node.home + .023 * Math.sin(phase * .42 + i * 1.9));
+      node.y = baseline + amplitude * (.72 * Math.sin(phase * .79 + i * 2.12 + travel * .29)
+        + .33 * Math.cos(phase * .41 - i * 1.5));
+      if (i === 3) {
+        node.x += (pointerX - .5) * width * .07;
+        node.y += (pointerY - .5) * amplitude * .6;
+      }
+      node.echo = node.y + amplitude * (.2 * Math.sin(phase * .93 + i * 2.5) + .105 * Math.cos(phase * .55 - i));
+      top = Math.min(top, node.y, node.echo);
+      bottom = Math.max(bottom, node.y, node.echo);
+    }
+    // Marge de l’interpolation et des repères en dehors de la ligne.
+    dirtyTop = top - amplitude * .5 - 24;
+    dirtyBottom = bottom + amplitude * .5 + 24;
+
+    const primary = traceResponse('y');
+    ctx.strokeStyle = 'rgba(188,213,168,.55)';
+    ctx.lineWidth = .95;
+    ctx.stroke(traceResponse('echo'));
+    ctx.strokeStyle = '#d5f59d';
+    ctx.lineWidth = 1.7;
+    ctx.stroke(primary);
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'left';
+    for (let i = 1; i < anchors.length - 1; i++) {
+      const {x, y} = anchors[i];
+      ctx.beginPath();
+      ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#10130e';
+      ctx.fill();
+      ctx.lineWidth = 1.1;
+      ctx.strokeStyle = '#d9e9c2';
+      ctx.stroke();
+      ctx.fillStyle = '#d6e3c9';
+      ctx.fillText('0' + i, x + 6, y - 7);
+    }
+  }
+
+  function sampleSpectrum() {
+    const {bands, fps, values} = spectrum;
+    const time = audio.currentTime;
+    const last = values.length / bands - 1;
+    const position = Math.min(last, Math.max(0, time * fps));
+    const row = Math.floor(position), mix = position - row;
+    const first = row * bands, second = Math.min(last, row + 1) * bands;
+    const dt = time - lastAudioTime;
+    const smoothing = dt >= 0 && dt < .2;
+    const attack = smoothing ? -Math.expm1(-dt / .018) : 1;
+    const release = smoothing ? -Math.expm1(-dt / .095) : 1;
+    for (let i = 0; i < bands; i++) {
+      const a = values.charCodeAt(first + i);
+      const target = (a + mix * (values.charCodeAt(second + i) - a)) / 255;
+      levels[i] += (target - levels[i]) * (target > levels[i] ? attack : release);
+    }
+    lastAudioTime = time;
+  }
+  function energy(position) {
+    const bin = Math.max(0, Math.min(levels.length - 1, position * levels.length - .5));
+    const left = Math.floor(bin);
+    return levels[left] + (bin - left) * (levels[Math.min(left + 1, levels.length - 1)] - levels[left]);
+  }
+  function drawSpectrum() {
+    const floor = height * .83;
+    const depth = height * .68;
+    let x = 0, y = floor - levels[0] * depth, top = y;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let i = 0; i < levels.length; i++) {
+      const nextX = width * (i + .5) / levels.length;
+      const nextY = floor - levels[i] * depth;
+      ctx.quadraticCurveTo(x, y, (x + nextX) / 2, (y + nextY) / 2);
+      x = nextX; y = nextY; top = Math.min(top, y);
+    }
+    ctx.quadraticCurveTo(x, y, width, y);
+    ctx.strokeStyle = '#d5f59d';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+    ctx.lineTo(width, floor); ctx.lineTo(0, floor); ctx.closePath();
+    ctx.fillStyle = bandFill;
+    ctx.fill();
+    dirtyTop = top - 3; dirtyBottom = floor + 3;
+  }
+
+  const ribbonDepth = new Float32Array(47);
+  const ribbonTaper = Float32Array.from(ribbonDepth, (_, i) => Math.sin(Math.PI * i / (ribbonDepth.length - 1)));
+  function drawRibbon(playing) {
+    if (!playing && ribbonWasPlaying === false) return;
+    ribbonWasPlaying = playing;
+    ribbon.clearRect(0, 0, 96, 30);
+    const upper = new Path2D();
+    const contour = new Path2D();
+    for (let i = 0; i < ribbonDepth.length; i++) {
+      const t = i / (ribbonDepth.length - 1), x = 2 + 92 * t;
+      const envelope = playing ? (energy(t - .045) + 2 * energy(t) + energy(t + .045)) / 4 : 0;
+      const depth = ribbonTaper[i] * (.6 + envelope * 14);
+      const top = 15 - depth;
+      if (i === 0) { upper.moveTo(x, top); contour.moveTo(x, top); }
+      else { upper.lineTo(x, top); contour.lineTo(x, top); }
+      ribbonDepth[i] = 15 + depth * (.25 + .25 * t);
+    }
+    for (let i = ribbonDepth.length - 1; i >= 0; i--) contour.lineTo(2 + 2 * i, ribbonDepth[i]);
+    contour.closePath();
+    ribbon.fillStyle = playing ? 'rgba(217,239,154,.12)' : 'rgba(184,193,169,.07)';
+    ribbon.fill(contour);
+    ribbon.lineWidth = .8;
+    ribbon.strokeStyle = playing ? 'rgba(217,239,154,.43)' : '#73786a';
+    ribbon.stroke(contour);
+    ribbon.strokeStyle = playing ? '#d9ef9a' : '#8c9284';
+    ribbon.stroke(upper);
+  }
+
+  function draw(now) {
+    frame = 0;
+    if (document.hidden) return;
+    const playing = !audio.paused && !audio.ended && !!spectrum;
+    if (previousTime !== null && !reduced.matches) phase += Math.min(now - previousTime, 120) * .00062;
+    previousTime = now;
+    ctx.clearRect(0, Math.floor(dirtyTop), width, Math.ceil(dirtyBottom) - Math.floor(dirtyTop));
+    if (playing && !reduced.matches) {
+      sampleSpectrum();
+      drawSpectrum();
+    } else drawAmbient();
+    drawRibbon(playing && !reduced.matches);
+    if (reduced.matches) return;
+    const interval = 1000 / (playing ? 60 : 30);
+    timer = setTimeout(() => { frame = requestAnimationFrame(draw); },
+      Math.max(0, interval - (performance.now() - now) - 5));
+  }
+  function restart() {
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+    previousTime = null;
+    if (!document.hidden) frame = requestAnimationFrame(draw);
+  }
+  function resize() {
+    const bounds = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.round(bounds.width)), h = Math.max(1, Math.round(bounds.height));
+    const density = Math.min(devicePixelRatio || 1, 2.5, Math.sqrt(3600000 / (w * h)));
+    if (width === w && height === h && scale === density) return;
+    width = w; height = h; scale = density;
+    canvas.width = Math.round(w * scale); canvas.height = Math.round(h * scale);
+    ctx.setTransform(canvas.width / w, 0, 0, canvas.height / h, 0, 0);
+    ribbon.canvas.width = Math.round(96 * scale); ribbon.canvas.height = Math.round(30 * scale);
+    ribbon.setTransform(ribbon.canvas.width / 96, 0, 0, ribbon.canvas.height / 30, 0, 0);
+    ribbonWasPlaying = null;
+    dirtyTop = 0; dirtyBottom = h;
+    bandFill = ctx.createLinearGradient(0, h * .2, 0, h * .83);
+    bandFill.addColorStop(0, 'rgba(157,198,106,.19)');
+    bandFill.addColorStop(1, 'rgba(157,198,106,.025)');
+    makeGrid();
+    restart();
+  }
+  document.addEventListener('pointermove', e => {
+    if (!finePointer.matches || reduced.matches || e.pointerType !== 'mouse') return;
+    pointerX = Math.max(0, Math.min(1, e.clientX / width));
+    pointerY = Math.max(0, Math.min(1, e.clientY / height));
+    const visible = !e.target.closest('header,button,a,input,main p,h1,h2,h3,dialog,.sticky-player,details,.about-meta');
+    cursor.style.visibility = visible ? 'visible' : 'hidden';
+    if (!visible) return;
+    cursor.style.transform = 'translate3d(' + (e.clientX + 12) + 'px,' + (e.clientY + 12) + 'px,0)';
+    const hz = 30 * Math.exp(frequencyRange * pointerX);
     const label = hz < 1000 ? Math.round(hz) + ' Hz' : (hz / 1000).toFixed(1) + ' kHz';
-    dawReadout.textContent = label + ' / ' + (12 - mouseY * 36).toFixed(1) + ' dB';
-  }
-}
-function tick(now) {
-  const interval = media.paused ? 50 : 0;
-  if (now - lastDraw >= interval) { drawAbletonEqBackground(); lastDraw = now; }
-  frame = requestAnimationFrame(tick);
-}
-function restartDrawing() {
-  cancelAnimationFrame(frame);
-  frame = 0;
-  if (document.hidden) return;
-  drawAbletonEqBackground();
-  if (!motion.matches && (pointer.matches || !media.paused)) frame = requestAnimationFrame(tick);
-}
-document.addEventListener('visibilitychange', restartDrawing);
-motion.addEventListener('change', restartDrawing);
-pointer.addEventListener('change', restartDrawing);
-media.addEventListener('playing', restartDrawing);
-media.addEventListener('pause', restartDrawing);
-resizeEq();
+    readout.textContent = label + ' / ' + (12 - pointerY * 36).toFixed(1) + ' dB';
+  }, {passive: true});
+  document.addEventListener('pointerleave', () => { cursor.style.visibility = 'hidden'; });
+  window.addEventListener('scroll', () => { scrollPosition = window.scrollY; }, {passive: true});
+  window.addEventListener('resize', resize);
+  document.addEventListener('visibilitychange', restart);
+  reduced.addEventListener('change', restart);
+  audio.addEventListener('seeking', () => { lastAudioTime = NaN; });
+  audio.addEventListener('playing', restart);
+  audio.addEventListener('pause', restart);
+  resize();
+
+  return next => {
+    if (spectrum === next) return;
+    spectrum = next;
+    if (next && !next.values) next.values = atob(next.encoded);
+    levels = next ? new Float32Array(next.bands) : null;
+    lastAudioTime = NaN;
+    restart();
+  };
+})();

@@ -12,6 +12,7 @@
  */
 const i18nDict = {
   fr: {
+    skipNav: "Aller au contenu",
     rotondeArchive: "Dans l’atrium de la Rotonde, les projections d’Iluma Visual accompagnaient la carte blanche Void X Series avec Attechtion Please. Sono Design signait l’exposition et le live painting.",
     livePhotos: "Archives sur Instagram ↗",
     booking: "Booking ↗",
@@ -34,7 +35,7 @@ const i18nDict = {
     nav_releases: "Sorties",
     nav_podcasts: "Podcasts",
     nav_roster: "Roster",
-    nav_gallery: "Galerie",
+    nav_gallery: "Archives live",
     nav_about: "À propos",
     hero_tag: "Label indépendant · Paris, 2017",
     hero_desc: "VOID défend une techno mentale et texturée. Sur Void X Series, le groove se déplace entre minimale, micro-house et électro. Ces deux lignes traversent le catalogue et se croisent derrière les platines.",
@@ -71,6 +72,7 @@ const i18nDict = {
     card_open_sc: "Écouter ↗"
   },
   en: {
+    skipNav: "Skip to content",
     rotondeArchive: "In the Rotonde atrium, Iluma Visual projected across the room for the Void X Series takeover with Attechtion Please. Sono Design curated the exhibition and painted live.",
     livePhotos: "Archives on Instagram ↗",
     booking: "Booking ↗",
@@ -93,7 +95,7 @@ const i18nDict = {
     nav_releases: "Releases",
     nav_podcasts: "Podcasts",
     nav_roster: "Roster",
-    nav_gallery: "Gallery",
+    nav_gallery: "Live archives",
     nav_about: "About",
     hero_tag: "Independent label · Paris, 2017",
     hero_desc: "VOID is rooted in hypnotic, textured techno. Void X Series moves between minimal, micro-house and electro. Both strands run through the catalogue and meet in the booth.",
@@ -141,7 +143,8 @@ const events = [
     category: "autonomous", badge: "SUNRISE SESSION", badgeType: "vxs",
     title: "Void X Series invites Minube",
     artist: "Minube · Any Yugël · Orphée b2b Tabet",
-    file: "assets/web/event-babour-shotgun-1400.jpg", thumb: "assets/web/event-babour-shotgun-480.jpg",
+    file: "assets/web/event-babour-shotgun-1400.webp", thumb: "assets/web/event-babour-shotgun-480.webp",
+    posterSize: [1400, 814], posterSrcset: "assets/web/event-babour-shotgun-480.webp 480w, assets/web/event-babour-shotgun-800.webp 800w, assets/web/event-babour-shotgun-1400.webp 1400w",
     meta_fr: "Venu de Moldavie, Minube rejoint les résidents de Void X Series à bord de la péniche du parc de la Villette. De 6 h à midi, entre minimale, électro et house.<br><br>Visuel : @tristan.chrtr",
     meta_en: "Moldova’s Minube joins the Void X Series residents on a barge in Parc de la Villette. Minimal, electro and house from 6 am to noon.<br><br>Artwork : @tristan.chrtr"
   },
@@ -153,8 +156,8 @@ const events = [
     badgeType: "void",
     title: "Château Perché - Scène La Grande Muraille", title_en: "Château Perché - La Grande Muraille Stage",
     artist: "19h non-stop · Void Records x Evolove",
-    crop: [680, 842, 808],
-    file: "assets/web/event-perche-2025-1000.jpg", thumb: "assets/web/event-perche-2025-480.jpg",
+    file: "assets/web/event-perche-2025-680.webp", thumb: "assets/web/event-perche-2025-320.webp",
+    posterSize: [680, 808], posterSrcset: "assets/web/event-perche-2025-320.webp 320w, assets/web/event-perche-2025-480.webp 480w, assets/web/event-perche-2025-680.webp 680w",
     meta_fr: "La Grande Muraille, de 13 h à 8 h le lendemain. Une scène partagée avec Evolove au château de Farcheville.<br><br><strong>LINE-UP :</strong> Eli Verveine · Ramona Yacef · Nori · Sanrei b2b Orphée · Tishka b2b Tabet · Stourm b2b Leo · Ovomaltine.<br><br>Visuel : @tristan.chrtr",
     meta_en: "La Grande Muraille, from 1 pm to 8 am the next morning. A stage shared with Evolove at Château de Farcheville.<br><br><strong>LINE-UP :</strong> Eli Verveine · Ramona Yacef · Nori · Sanrei b2b Orphée · Tishka b2b Tabet · Stourm b2b Leo · Ovomaltine.<br><br>Visual : @tristan.chrtr"
   },
@@ -166,7 +169,8 @@ const events = [
     badgeType: "void",
     title: "Virage - Void Records x Trikar",
     artist: "Voiski · Laure Croft · Tasha · Gatien Delobel b2b Eniro",
-    file: "assets/web/event-virage-2025-shotgun-1000.jpg", thumb: "assets/web/event-virage-2025-shotgun-480.jpg",
+    file: "assets/web/event-virage-2025-shotgun-1000.webp", thumb: "assets/web/event-virage-2025-shotgun-480.webp",
+    posterSize: [1000, 563], posterSrcset: "assets/web/event-virage-2025-shotgun-480.webp 480w, assets/web/event-virage-2025-shotgun-1000.webp 1000w",
     meta_fr: "Plateau techno sous le périphérique parisien mêlant performances live et sélections vinyles.<br><br>Avec Tasha (Neighbourhood), Laure Croft (Sex*recs / Kinky Sundays), Voiski (en remplacement de dernière minute pour .Vril) et nos résidents Gatien Delobel b2b Eniro.<br><br>Direction visuelle & motion : @lvsk_klem · Peinture originale : @pauline.naret",
     meta_en: "Live techno and vinyl sets beneath the Paris ring road.<br><br>Featuring Tasha (Neighbourhood), Laure Croft (Sex*recs / Kinky Sundays), Voiski (last-minute fill-in for .Vril), and residents Gatien Delobel b2b Eniro.<br><br>Visual direction & motion : @lvsk_klem · Painting : @pauline.naret"
   },
@@ -178,7 +182,8 @@ const events = [
     badgeType: "void",
     title: "FVTVR Invites Void Records",
     artist: "Andy Martin · Justine Perry b2b Paula Koski · Justyn Nell b2b Orphée",
-    file: "assets/web/event-fvtvr-andy-shotgun-1000.jpg", thumb: "assets/web/event-fvtvr-andy-shotgun-480.jpg",
+    file: "assets/web/event-fvtvr-andy-shotgun-1000.webp", thumb: "assets/web/event-fvtvr-andy-shotgun-480.webp",
+    posterSize: [1000, 563], posterSrcset: "assets/web/event-fvtvr-andy-shotgun-480.webp 480w, assets/web/event-fvtvr-andy-shotgun-1000.webp 1000w",
     meta_fr: "De minuit à 7 h, un solo et deux b2b.<br><br>Avec Andy Martin, Justine Perry b2b Paula Koski et Justyn Nell b2b Orphée.<br>Visuel : @tristan.chrtr",
     meta_en: "One solo set and two back-to-backs, from midnight to 7 am.<br><br>Featuring Andy Martin, Justine Perry b2b Paula Koski, and Justyn Nell b2b Orphée.<br>Visual : @tristan.chrtr"
   },
@@ -190,7 +195,8 @@ const events = [
     badgeType: "vxs",
     title: "Void X Series - Buttes-Chaumont",
     artist: "Domi · Coleeeette · Jamel Zouch · Any Yugël · Matescou b2b Gatien Delobel",
-    file: "assets/web/event-puebla-shotgun-1400.jpg", thumb: "assets/web/event-puebla-shotgun-480.jpg",
+    file: "assets/web/event-puebla-shotgun-1400.webp", thumb: "assets/web/event-puebla-shotgun-480.webp",
+    posterSize: [1400, 790], posterSrcset: "assets/web/event-puebla-shotgun-480.webp 480w, assets/web/event-puebla-shotgun-800.webp 800w, assets/web/event-puebla-shotgun-1400.webp 1400w",
     meta_fr: "Aux Buttes-Chaumont, Void X Series consacre l’après-midi à la minimale, à la micro-house et à l’électro. De 15 h à 1 h, entrée libre avant 16 h 30.<br><br>Visuel : @tristan.chrtr",
     meta_en: "In the Buttes-Chaumont, Void X Series dedicates the afternoon to minimal, micro-house and electro. From 3 pm to 1 am, with free entry before 4:30 pm.<br><br>Artwork : @tristan.chrtr"
   },
@@ -202,7 +208,8 @@ const events = [
     badgeType: "vxs",
     title: "Beyond #5 x Void X Series",
     artist: "Unai Trotti (Cartulis / Fold) · IAMBP · Tabescou · Parea b2b Martin",
-    file: "assets/web/event-beyond-2025-shotgun-1000.jpg", thumb: "assets/web/event-beyond-2025-shotgun-480.jpg",
+    file: "assets/web/event-beyond-2025-shotgun-1000.webp", thumb: "assets/web/event-beyond-2025-shotgun-480.webp",
+    posterSize: [1000, 524], posterSrcset: "assets/web/event-beyond-2025-shotgun-480.webp 480w, assets/web/event-beyond-2025-shotgun-1000.webp 1000w",
     meta_fr: "Pour sa cinquième édition, Beyond s’associe à Void X Series. Unai Trotti (Cartulis) et IAMBP partagent le plateau avec Tabescou et le duo Parea b2b Martin.",
     meta_en: "For its fifth edition, Beyond joins Void X Series. Unai Trotti (Cartulis) and IAMBP share the bill with Tabescou and a back-to-back set from Parea and Martin."
   },
@@ -214,7 +221,8 @@ const events = [
     badgeType: "void",
     title: "Tarab Invite Void Records",
     artist: "Franco Rossi · Gatien Delobel b2b M-ZR · Bliss b2b Bystander · Lymsa · Orphita",
-    file: "assets/web/event-fawa-2025-shotgun-1000.jpg", thumb: "assets/web/event-fawa-2025-shotgun-480.jpg",
+    file: "assets/web/event-fawa-2025-shotgun-1000.webp", thumb: "assets/web/event-fawa-2025-shotgun-480.webp",
+    posterSize: [1000, 563], posterSrcset: "assets/web/event-fawa-2025-shotgun-480.webp 480w, assets/web/event-fawa-2025-shotgun-1000.webp 1000w",
     meta_fr: "Tarab invite VOID de 7 h à 17 h. Franco Rossi joue en solo, Gatien Delobel retrouve M-ZR en b2b et Orphée rejoint Roulita sous le nom d’Orphita.",
     meta_en: "Tarab hosts VOID from 7 am to 5 pm. Franco Rossi plays solo, Gatien Delobel goes back to back with M-ZR, and Orphée joins Roulita as Orphita."
   },
@@ -226,7 +234,8 @@ const events = [
     badgeType: "void",
     title: "FVTVR Invites Void Records",
     artist: "D.Dan · Lady Starlight (Live) · Rkeat · Gatien Delobel",
-    file: "assets/web/event-fvtvr-ddan-shotgun-1000.jpg", thumb: "assets/web/event-fvtvr-ddan-shotgun-480.jpg",
+    file: "assets/web/event-fvtvr-ddan-shotgun-1000.webp", thumb: "assets/web/event-fvtvr-ddan-shotgun-480.webp",
+    posterSize: [1000, 524], posterSrcset: "assets/web/event-fvtvr-ddan-shotgun-480.webp 480w, assets/web/event-fvtvr-ddan-shotgun-1000.webp 1000w",
     meta_fr: "Plateau club et live hardware de minuit à 07h00 au Quai d'Austerlitz.<br>Visuel & sound design : @tristan.chrtr · Modèle : Colline @oc.mg",
     meta_en: "Club and live hardware showcase from midnight to 07:00 at Quai d'Austerlitz.<br>Visual & sound design : @tristan.chrtr · Model : Colline @oc.mg"
   },
@@ -238,7 +247,8 @@ const events = [
     badgeType: "void",
     title: "FVTVR Invites Void Records",
     artist: "Nastia · Stef Mendesidis (Live) · Orphée · M-ZR",
-    file: "assets/web/event-fvtvr-nastia-shotgun-1000.jpg", thumb: "assets/web/event-fvtvr-nastia-shotgun-480.jpg",
+    file: "assets/web/event-fvtvr-nastia-shotgun-1000.webp", thumb: "assets/web/event-fvtvr-nastia-shotgun-480.webp",
+    posterSize: [1000, 524], posterSrcset: "assets/web/event-fvtvr-nastia-shotgun-480.webp 480w, assets/web/event-fvtvr-nastia-shotgun-1000.webp 1000w",
     meta_fr: "Session techno et live analogique de minuit à 07h00 au FVTVR.<br>Artwork : @tristan.chrtr · Modèle : @matounrv",
     meta_en: "Techno and analog live session from midnight to 07:00 at FVTVR.<br>Artwork : @tristan.chrtr · Model : @matounrv"
   }
@@ -252,7 +262,7 @@ const releases = [
     date: "2026-07-27",
     cat: "VRVA04", type: "void", isVinyl: false, format: "VA · 14 TRACKS",
     title: "Denebola", artist: "Various Artists",
-    file: "assets/web/cover-vrva04-1000.jpg", thumb: "assets/web/cover-vrva04-480.jpg",
+    file: "assets/web/cover-vrva04-1000.jpg", thumb: "assets/web/cover-vrva04-480.webp",
     link: "https://voidrecord.bandcamp.com/album/denebola-vrva04",
     meta_fr: "Compilation internationale de 14 titres stripped-down & driving techno.<br><br><strong>TRACKLIST :</strong> Adam · Christie · Eniro · Gat SDR · Lly · Lumertz · MRXY · Oppressed Society · Rues · Slany · Slak · Tony MLR · Varju & QV · Yrsen.<br><br>Artwork : @tristan.chrtr",
     meta_en: "14-track international compilation of stripped-down, driving techno.<br><br><strong>TRACKLIST :</strong> Adam · Christie · Eniro · Gat SDR · Lly · Lumertz · MRXY · Oppressed Society · Rues · Slany · Slak · Tony MLR · Varju & QV · Yrsen.<br><br>Artwork : @tristan.chrtr"
@@ -261,14 +271,14 @@ const releases = [
     date: "2026-07-02",
     cat: "VOID012", type: "void", isVinyl: false, format: "DIGITAL EP",
     title: "Intensity or/and Authenticity ?", artist: "NOXATRA",
-    file: "assets/web/cover-void012-1000.jpg", thumb: "assets/web/cover-void012-480.jpg",
+    file: "assets/web/cover-void012-1000.jpg", thumb: "assets/web/cover-void012-480.webp",
     link: "https://voidrecord.bandcamp.com/album/intensity-or-and-authenticity-void012",
     meta_fr: "Trois titres techno, un morceau ambient et un remix.<br><br>Artwork : @tristan.chrtr",
     meta_en: "Three techno cuts, an ambient track and a remix.<br><br>Artwork : @tristan.chrtr"
   },
   {
     date: "2026-04-14",
-    cat: "VXS005", audioFile: "assets/vxs005-preview.mp3", spectrum: previewSpectra.vxs005, type: "vxs", isVinyl: false, format: "DIGITAL EP",
+    cat: "VXS005", audioFile: "assets/vxs005-preview.mp3", spectrumKey: "vxs005", type: "vxs", isVinyl: false, format: "DIGITAL EP",
     title: "Finding The Way", artist: "Prodot",
     file: "assets/web/cover-vxs005-1000.jpg", thumb: "assets/web/cover-vxs005-480.jpg",
     link: "https://voidrecord.bandcamp.com/album/finding-the-way-vxs005",
@@ -277,7 +287,7 @@ const releases = [
   },
   {
     date: "2026-03-04",
-    cat: "VOID011", audioFile: "assets/orbit-preview.mp3", spectrum: previewSpectra.orbit, type: "void", isVinyl: false, format: "DIGITAL EP",
+    cat: "VOID011", audioFile: "assets/orbit-preview.mp3", spectrumKey: "orbit", type: "void", isVinyl: false, format: "DIGITAL EP",
     title: "Orbit", artist: "TVNG",
     file: "assets/web/cover-void011-1000.jpg", thumb: "assets/web/cover-void011-480.jpg",
     link: "https://voidrecord.bandcamp.com/album/orbit-void011-2",
@@ -288,25 +298,25 @@ const releases = [
     date: "2025-12-26",
     cat: "VXS004", type: "vxs", isVinyl: false, format: "DIGITAL EP",
     title: "ERA", artist: "T!M",
-    file: "assets/web/cover-vxs004-1000.jpg", thumb: "assets/web/cover-vxs004-480.jpg",
+    file: "assets/web/cover-vxs004-1000.jpg", thumb: "assets/web/cover-vxs004-480.webp",
     link: "https://voidrecord.bandcamp.com/album/era-vxs004",
     meta_fr: "5 titres de minimale sombre, émotionnelle et atmosphérique : Masana, Evidence Tranquille, Screens, Goles, Do You Believe?<br><br>Artwork : @tristan.chrtr",
     meta_en: "5 deeply emotional, dark, and atmospheric minimal tracks: Masana, Evidence Tranquille, Screens, Goles, Do You Believe?<br><br>Artwork : @tristan.chrtr"
   },
   {
     date: "2025-10-01",
-    cat: "VOID010", audioFile: "assets/void010-preview.mp3", spectrum: previewSpectra.void010, type: "void", isVinyl: false, format: "DIGITAL EP",
+    cat: "VOID010", audioFile: "assets/void010-preview.mp3", spectrumKey: "void010", type: "void", isVinyl: false, format: "DIGITAL EP",
     title: "Discussion Board", artist: "Jiho",
-    file: "assets/web/cover-void010-1000.jpg", thumb: "assets/web/cover-void010-480.jpg",
+    file: "assets/web/cover-void010-1000.jpg", thumb: "assets/web/cover-void010-480.webp",
     link: "https://voidrecord.bandcamp.com/album/discussion-board-void010",
     meta_fr: "6 titres signés par le producteur coréen basé à Tokyo Jiho (fondateur de Subhills), incluant un remix de Linear System.<br><br>Artwork : @tristan.chrtr",
     meta_en: "6 tracks by Tokyo-based Korean producer Jiho (founder of Subhills), including a remix by Linear System.<br><br>Artwork : @tristan.chrtr"
   },
   {
     date: "2025-06-25",
-    cat: "VOID009", audioFile: "assets/void009-preview.mp3", spectrum: previewSpectra.void009, type: "void", isVinyl: false, format: "DIGITAL EP",
+    cat: "VOID009", audioFile: "assets/void009-preview.mp3", spectrumKey: "void009", type: "void", isVinyl: false, format: "DIGITAL EP",
     title: "Breath", artist: "Toni BA",
-    file: "assets/web/cover-void009-1000.jpg", thumb: "assets/web/cover-void009-480.jpg",
+    file: "assets/web/cover-void009-1000.jpg", thumb: "assets/web/cover-void009-480.webp",
     link: "https://voidrecord.bandcamp.com/album/breath-void009",
     meta_fr: "4 pistes de techno brute et texturée accompagnées des remixes de Franco Rossi et Caniche.<br><br>Artwork : @tristan.chrtr",
     meta_en: "4 tracks of raw, textured hypnotic techno featuring remixes by Franco Rossi and Caniche.<br><br>Artwork : @tristan.chrtr"
@@ -315,7 +325,7 @@ const releases = [
     date: "2025-04-14",
     cat: "VOID008", type: "void", isVinyl: false, format: "DIGITAL EP",
     title: "Scorpion", artist: "Modēm",
-    file: "assets/web/cover-void008-1000.jpg", thumb: "assets/web/cover-void008-480.jpg",
+    file: "assets/web/cover-void008-1000.jpg", thumb: "assets/web/cover-void008-480.webp",
     link: "https://voidrecord.bandcamp.com/album/scorpion-void008",
     meta_fr: "4 titres aux grooves rapides, percussions roulantes et remix signé @ogtrues.<br><br>Artwork : @tristan.chrtr",
     meta_en: "4-tracker featuring fast grooves, rolling drums, and a rework by @ogtrues.<br><br>Artwork : @tristan.chrtr"
@@ -324,7 +334,7 @@ const releases = [
     date: "2025-01-29",
     cat: "VXS003", type: "vxs", isVinyl: false, format: "DIGITAL EP",
     title: "Dancing Shoes", artist: "Groove Instant",
-    file: "assets/web/cover-vxs003-1000.jpg", thumb: "assets/web/cover-vxs003-480.jpg",
+    file: "assets/web/cover-vxs003-1000.jpg", thumb: "assets/web/cover-vxs003-480.webp",
     link: "https://voidrecord.bandcamp.com/album/dancing-shoes-vxs003",
     meta_fr: "7 pistes entre minimalisme subtil, lignes de basse denses et groove rapide.<br><br>Artwork : @tristan.chrtr",
     meta_en: "7 tracks raising subtle minimalism to an energetic groove with dense basslines.<br><br>Artwork : @tristan.chrtr"
@@ -333,7 +343,7 @@ const releases = [
     date: "2024-12-18",
     cat: "VOID007", type: "void", isVinyl: false, format: "DIGITAL EP",
     title: "Choices", artist: "E2NMN",
-    file: "assets/web/cover-void007-1000.jpg", thumb: "assets/web/cover-void007-480.jpg",
+    file: "assets/web/cover-void007-1000.jpg", thumb: "assets/web/cover-void007-480.webp",
     link: "https://voidrecord.bandcamp.com/album/choices-void007",
     meta_fr: "Tracklist : 1. Melting Every Piece · 2. Turbulencias · 3. Stolen Choices · 4. Senord.<br><br>Artwork : @tristan.chrtr",
     meta_en: "Tracklist : 1. Melting Every Piece · 2. Turbulencias · 3. Stolen Choices · 4. Senord.<br><br>Artwork : @tristan.chrtr"
@@ -342,7 +352,7 @@ const releases = [
     date: "2024-08-06",
     cat: "VOID006", type: "void", isVinyl: true, format: "12\" VINYL & DIGITAL",
     title: "Corellia", artist: "Franco Rossi",
-    file: "assets/web/cover-void006-full.jpg", thumb: "assets/web/cover-void006-thumb.jpg",
+    file: "assets/web/cover-void006-full.jpg", thumb: "assets/web/cover-void006-thumb.webp",
     link: "https://voidrecord.bandcamp.com/album/corellia-void006",
     meta_fr: "Sortie vinyle 12\" et digitale. Techno immersive et mentale incluant un remix de Juri Heidemann.<br><br>Artwork : @tristan.chrtr",
     meta_en: "12\" vinyl and digital release. Immersive, hypnotic techno featuring a remix by Juri Heidemann.<br><br>Artwork : @tristan.chrtr"
@@ -356,7 +366,7 @@ const releases = [
     format: "VA · 9 TRACKS",
     isVinyl: false,
     file: "assets/web/cover-vrva03-1000.jpg",
-    thumb: "assets/web/cover-vrva03-480.jpg",
+    thumb: "assets/web/cover-vrva03-480.webp",
     link: "https://voidrecord.bandcamp.com/album/castula-vrva03",
     meta_fr: "Neuf titres de techno, avec notamment Cheka, Conntex, LLY et West Code.",
     meta_en: "Nine techno tracks featuring Cheka, Conntex, LLY and West Code."
@@ -370,7 +380,7 @@ const releases = [
     format: "SINGLE",
     isVinyl: false,
     file: "assets/web/cover-why-my-music-1000.jpg",
-    thumb: "assets/web/cover-why-my-music-480.jpg",
+    thumb: "assets/web/cover-why-my-music-480.webp",
     link: "https://voidrecord.bandcamp.com/track/why-my-music",
     meta_fr: "Cov’ et Matescou à la production, Olo à la voix.",
     meta_en: "Produced by Cov’ and Matescou, with original vocals by Olo."
@@ -379,7 +389,7 @@ const releases = [
     date: "2023-10-09",
     cat: "VXS002", type: "vxs", isVinyl: false, format: "DIGITAL EP",
     title: "Yosuru", artist: "Cov'",
-    file: "assets/web/cover-vxs002-full.jpg", thumb: "assets/web/cover-vxs002-thumb.jpg",
+    file: "assets/web/cover-vxs002-full.jpg", thumb: "assets/web/cover-vxs002-thumb.webp",
     link: "https://voidrecord.bandcamp.com/album/yosuru-vxs002",
     meta_fr: "Cov’ sur Void X Series. Basses profondes et minimale.",
     meta_en: "Cov’ on Void X Series. Deep bass and stripped-back minimal."
@@ -388,7 +398,7 @@ const releases = [
     date: "2023-05-17",
     cat: "VXS001", type: "vxs", isVinyl: false, format: "DIGITAL EP",
     title: "Ikigai", artist: "Piero Peviani",
-    file: "assets/web/cover-vxs001-full.jpg", thumb: "assets/web/cover-vxs001-thumb.jpg",
+    file: "assets/web/cover-vxs001-full.jpg", thumb: "assets/web/cover-vxs001-thumb.webp",
     link: "https://voidrecord.bandcamp.com/album/ikigai-vxs001",
     meta_fr: "Piero Peviani signe le premier EP solo de Void X Series.",
     meta_en: "The first solo EP on Void X Series comes from Piero Peviani."
@@ -402,7 +412,7 @@ const releases = [
     format: "DIGITAL EP",
     isVinyl: false,
     file: "assets/web/cover-void005-1000.jpg",
-    thumb: "assets/web/cover-void005-480.jpg",
+    thumb: "assets/web/cover-void005-480.webp",
     link: "https://voidrecord.bandcamp.com/album/merging-point-void005",
     meta_fr: "Cinq titres signés LLY et Ezauf.",
     meta_en: "Five tracks by LLY and Ezauf."
@@ -416,7 +426,7 @@ const releases = [
     format: "VA · 5 TRACKS",
     isVinyl: false,
     file: "assets/web/cover-vxsva01-1000.jpg",
-    thumb: "assets/web/cover-vxsva01-480.jpg",
+    thumb: "assets/web/cover-vxsva01-480.webp",
     link: "https://voidrecord.bandcamp.com/album/harajuku-vxsva01",
     meta_fr: "Cinq titres de dltpn_, Ғərqlι, Piero Peviani, Stourm et Flexsa.",
     meta_en: "Five tracks from dltpn_, Ғərqlι, Piero Peviani, Stourm and Flexsa."
@@ -460,7 +470,7 @@ const roster = [
     name: "Gatien Delobel",
     role: "Co-founder · Resident DJ · Void Records", role_fr: "Cofondateur · DJ résident · Void Records",
     branch: "VOID",
-    file: "assets/web/artist-gatien-delobel-1000.jpg", thumb: "assets/web/artist-gatien-delobel-480.jpg",
+    file: "assets/web/artist-gatien-delobel-1000.jpg", thumb: "assets/web/artist-gatien-delobel-288.webp",
     bio_fr: "Gatien commence sa collection de disques en 2016, puis cofonde VOID à Paris en 2017. Dans son sac, de la techno organique, de la minimale et de la micro-house. Il a partagé les platines avec Lady Starlight, D.Dan, Tasha, Domi et Olga Korol.",
     bio_en: "Gatien started collecting in 2016 and co-founded VOID in Paris in 2017. His record bag spans organic techno, minimal and micro-house. He’s shared booths with Lady Starlight, D.Dan, Tasha, Domi and Olga Korol.",
     influences: "", albumTitle: "", albumUrl: "", setTitle: "", setUrl: ""
@@ -469,7 +479,7 @@ const roster = [
     name: "M-ZR",
     role: "Co-founder · Resident DJ · Void Records", role_fr: "Cofondateur · DJ résident · Void Records",
     branch: "VOID",
-    file: "assets/web/artist-m-zr-1000.jpg", thumb: "assets/web/artist-m-zr-480.jpg",
+    file: "assets/web/artist-m-zr-1000.jpg", thumb: "assets/web/artist-m-zr-288.webp",
     bio_fr: "DJ parisien et cofondateur de VOID en 2017, M-ZR joue en free party, en warehouse et en club. Ses sets passent de la techno hypnotique au hardgroove, avec un faible pour les rythmes tribaux.",
     bio_en: "Paris DJ and VOID co-founder since 2017. From free parties to warehouses and clubs, M-ZR plays hypnotic techno and hardgroove with a taste for tribal rhythms.",
     influences: "", albumTitle: "", albumUrl: "", setTitle: "", setUrl: ""
@@ -478,7 +488,7 @@ const roster = [
     name: "Orphée",
     role: "Resident DJ · Void Records", role_fr: "DJ résident · Void Records",
     branch: "VOID",
-    file: "assets/web/artist-orphee-1000.jpg", thumb: "assets/web/artist-orphee-480.jpg",
+    file: "assets/web/artist-orphee-1000.jpg", thumb: "assets/web/artist-orphee-288.webp",
     bio_fr: "", bio_en: "",
     influences: "", albumTitle: "", albumUrl: "",
     setTitle: "VR Podcast 036 (Vinyl Only)",
@@ -488,7 +498,7 @@ const roster = [
     name: "Any Yugël",
     role: "Resident DJ · Void X Series", role_fr: "DJ résidente · Void X Series",
     branch: "VXS",
-    file: "assets/web/artist-any-yugel-1000.jpg", thumb: "assets/web/artist-any-yugel-480.jpg",
+    file: "assets/web/artist-any-yugel-1000.jpg", thumb: "assets/web/artist-any-yugel-288.webp",
     bio_fr: "Résidente de Void X Series, Any Yugël joue aussi sur La Face B à Montréal et avec le collectif Ryugu. Dans ses sets, la minimale et l’électro croisent la progressive house et la trance. On la retrouve chez Radio Sofa, 39 Records, Gimic et Rinse.",
     bio_en: "A Void X Series resident, Any Yugël also plays on Montreal’s La Face B and with Ryugu. Her sets move between minimal, electro, progressive house and trance. Hear her on Radio Sofa, 39 Records, Gimic and Rinse.",
     influences: "Per Hammar, Luna Ludmila, Sugar Free, Pancratio, Jay Tripwire, DJ Sweet6teen",
@@ -500,7 +510,7 @@ const roster = [
     name: "C.LYYA",
     role: "Resident DJ · Producer · Void X Series", role_fr: "DJ résidente · Production · Void X Series",
     branch: "VXS",
-    file: "assets/web/artist-cllya-1000.jpg", thumb: "assets/web/artist-cllya-480.jpg",
+    file: "assets/web/artist-cllya-1000.jpg", thumb: "assets/web/artist-cllya-288.webp",
     bio_fr: "", bio_en: "",
     influences: "", albumTitle: "", albumUrl: "",
     setTitle: "Void X Series Podcast 008",
@@ -510,7 +520,7 @@ const roster = [
     name: "Tabet",
     role: "Resident DJ · Void X Series", role_fr: "DJ résident · Void X Series",
     branch: "VXS",
-    file: "assets/web/artist-tabet-1000.jpg", thumb: "assets/web/artist-tabet-480.jpg",
+    file: "assets/web/artist-tabet-1000.jpg", thumb: "assets/web/artist-tabet-288.webp",
     bio_fr: "", bio_en: "",
     influences: "", albumTitle: "", albumUrl: "", setTitle: "", setUrl: ""
   },
@@ -518,7 +528,7 @@ const roster = [
     name: "Mowteng",
     role: "Resident DJ · Void Records", role_fr: "DJ résident · Void Records",
     branch: "VOID",
-    file: "assets/web/artist-mowteng-1000.jpg", thumb: "assets/web/artist-mowteng-480.jpg",
+    file: "assets/web/artist-mowteng-1000.jpg", thumb: "assets/web/artist-mowteng-288.webp",
     bio_fr: "Mowteng rejoint VOID en 2024. Quinze ans de sélection entre ambient, techno et sons organiques, avec un goût pour les atmosphères inspirées de la nature et de la littérature.",
     bio_en: "Mowteng joined VOID in 2024. Fifteen years of selecting ambient, techno and organic sounds, drawing on landscapes and literature.",
     influences: "DJrum, Donato Dozzy, Feral, Dorisburg, Chewlie, Jane Fitz, Dream Dolphin, Voiski, Carre",

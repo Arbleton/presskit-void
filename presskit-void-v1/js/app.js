@@ -4,20 +4,14 @@ const byId = id => document.getElementById(id);
 let lang = 'fr';
 const local = (fr, en) => lang === 'fr' ? fr : en;
 const translated = (item, key) => item[key + '_' + lang] ?? item[key] ?? '';
-const audio = byId('audio-engine');
+const previewPlayer = createPreviewPlayer(releases, local, closeDrawer);
 const modal = byId('modal');
 const drawer = byId('sc-drawer');
 const gallery = byId('carousel-track');
 let selectedEvent = 'all';
 let selectedRelease = 'all';
-const playlist = releases.filter(r => r.audioFile);
-const trackSelect = byId('cur-track');
-for (const track of playlist) trackSelect.add(new Option(track.artist + ' - ' + track.title, track.cat));
-trackSelect.onchange = () => playTrack(playlist[trackSelect.selectedIndex]);
-let currentTrack = playlist.find(track => track.cat === 'VOID011') || playlist[0];
 let modalTrack;
 let drawerButton;
-let playbackError = false;
 
 function element(tag, className, text) {
   const el = document.createElement(tag);
@@ -71,6 +65,7 @@ function picture(item, title, className, badge, branch) {
 
 function card(grid, frame, tag, title, sub, footer, activate) {
   const button = element('button', 'card');
+  button.setAttribute('aria-haspopup', 'dialog');
   const body = element('div', 'card-body');
   const heading = element('div');
   heading.append(element('div', 'card-tag', tag), element('div', 'card-title', title));
@@ -96,9 +91,9 @@ function linkCredits(container) {
   while (walker.nextNode()) nodes.push(walker.currentNode);
   for (const node of nodes) {
     if (node.parentElement.closest('a')) continue;
-    const parts = node.data.split(/(?<![\w.+-])(@[\w]+(?:\.[\w]+)*)/g);
+    const parts = node.data.split(/(@\w+(?:\.\w+)*)/g);
     if (parts.length > 1) node.replaceWith(...parts.map((part, i) =>
-      i % 2 ? externalLink(part, 'https://www.instagram.com/' + part.slice(1) + '/') : part));
+      i % 2 && !/[\w.+-]$/.test(parts[i - 1]) ? externalLink(part, 'https://www.instagram.com/' + part.slice(1) + '/') : part));
   }
 }
 
@@ -147,7 +142,7 @@ function showModal(item, title, tag, body, link, label) {
   const frame = byId('modal-wrap');
   frame.hidden = !item.file;
   frame.replaceChildren();
-  if (item.file) frame.append(artwork(item, item.file, title));
+  if (item.file) frame.append(events.includes(item) ? posterImage(item, 'detail', title) : artwork(item, item.file, title));
   const extra = byId('modal-extra');
   extra.replaceChildren();
   for (const [name, value, url] of [['Influences', item.influences], ['Album', item.albumTitle, item.albumUrl], ['Set', item.setTitle, item.setUrl]]) {
@@ -172,62 +167,177 @@ byId('modal-close-btn').onclick = () => modal.close();
 modal.onclick = e => { if (e.target === modal) modal.close(); };
 byId('modal-cue-btn').onclick = () => {
   modal.close();
-  playTrack(modalTrack);
+  previewPlayer.play(modalTrack);
 };
 
 let visibleEvents = [];
 let previewEvent;
+let displayedDate;
 let openedEvent;
 
 const programme = document.querySelector('.programme');
+const dateGrid = byId('event-grid');
+const datePreview = byId('event-preview');
+const posterStage = datePreview.querySelector('.poster-stage');
+const posterNote = datePreview.querySelector('.poster-note');
+const datePath = byId('date-trace');
+const tracePulse = programme.querySelector('.trace-pulse');
+const compactDates = matchMedia('(max-width: 720px), (max-width: 1024px) and (hover: none) and (pointer: coarse)');
+const quietDates = matchMedia('(prefers-reduced-motion: reduce)');
+const dateControls = element('div', 'date-controls');
+const dateCount = element('span', 'date-count');
+dateCount.setAttribute('aria-live', 'polite');
+dateCount.setAttribute('aria-atomic', 'true');
+const dateMeter = element('span', 'date-meter');
+dateMeter.setAttribute('aria-hidden', 'true');
+const previousDate = element('button', '', '←');
+const nextDate = element('button', '', '→');
+for (const button of [previousDate, nextDate]) {
+  button.type = 'button';
+  button.setAttribute('aria-controls', dateGrid.id);
+}
+dateControls.append(dateCount, dateMeter, previousDate, nextDate);
+dateControls.hidden = true;
+programme.append(dateControls);
+
+// Les vignettes, le tirage et la fiche partagent le même choix de source selon la densité de l’écran.
+function posterImage(item, view, alt = '') {
+  if (!item.posterSrcset || !item.posterSize) return artwork(item, (alt ? item.file : item.thumb) || item.file, alt);
+  const img = element('img');
+  [img.width, img.height] = item.posterSize;
+  img.alt = alt;
+  img.loading = view === 'detail' || (view === 'preview' && programmeInView) ? 'eager' : 'lazy';
+  img.decoding = 'async';
+  if (view === 'card') return img;
+  const ratio = img.width / img.height;
+  const previewSize = 'min(40vw, ' + Math.round(44 * ratio) + 'vh, ' + Math.round(430 * ratio) + 'px)';
+  img.sizes = view === 'detail' ? '(max-width: 720px) 92vw, min(57vw, 600px)' : previewSize;
+  img.srcset = item.posterSrcset;
+  img.src = item.file;
+  return img;
+}
+
+function loadCardPoster(index, selected) {
+  const item = visibleEvents[index];
+  if (!item?.posterSrcset || !item.posterSize) return;
+  const image = dateGrid.children[index].querySelector('.date-cover img');
+  if (!image || image.srcset) return;
+  if (selected) {
+    // Le portrait occupe une fraction de la largeur du bouton, même sur un écran haute densité.
+    const ratio = item.posterSize[0] / item.posterSize[1];
+    image.sizes = 'min(80vw, 26rem, calc(clamp(144px, 45vw, 240px) * ' + ratio + '))';
+    image.srcset = item.posterSrcset;
+    image.src = item.file;
+  } else if (!image.hasAttribute('src')) image.src = item.thumb || item.file;
+}
+
+function moveDateCard(index, behavior = 'instant') {
+  const card = dateGrid.children[index];
+  if (card) dateGrid.scrollTo({left: card.offsetLeft - dateGrid.firstElementChild.offsetLeft, behavior});
+}
+let currentCard = -1;
+function updateDateControls(settled = false) {
+  if (!compactDates.matches || !visibleEvents.length) return;
+  // Les cartes ont toutes le même pas, y compris celle partiellement visible à droite.
+  const cards = dateGrid.children;
+  const step = cards.length > 1 ? cards[1].offsetLeft - cards[0].offsetLeft : 1;
+  const index = Math.max(0, Math.min(cards.length - 1, Math.round(dateGrid.scrollLeft / step)));
+  if (settled) loadCardPoster(index, true);
+  if (index === currentCard) return;
+  if (!settled) loadCardPoster(index, false);
+  loadCardPoster(index - 1, false);
+  loadCardPoster(index + 1, false);
+  currentCard = index;
+  previewEvent = visibleEvents[index];
+  dateMeter.style.setProperty('--date-index', index);
+  dateCount.textContent = (index + 1) + ' / ' + cards.length;
+  previousDate.disabled = index === 0;
+  nextDate.disabled = index === cards.length - 1;
+}
+function browseDateCard(direction) {
+  moveDateCard(currentCard + direction, quietDates.matches ? 'instant' : 'smooth');
+}
+previousDate.onclick = () => browseDateCard(-1);
+nextDate.onclick = () => browseDateCard(1);
+let dateSettle;
+dateGrid.addEventListener('scroll', () => {
+  updateDateControls();
+  clearTimeout(dateSettle);
+  dateSettle = setTimeout(() => updateDateControls(true), 120);
+}, {passive: true});
+compactDates.addEventListener('change', renderEvents);
 let traceFrame = 0;
+let programmeInView = false;
+let activeRow;
+let pulseAnimation;
 function drawDateTrace() {
   traceFrame = 0;
-  const preview = byId('event-preview');
-  const row = programme.querySelector('.current .programme-arrow');
-  const path = byId('date-trace');
-  if (!row || !preview.offsetWidth || preview.hidden) {
-    path.removeAttribute('d');
-    return;
-  }
+  if (!activeRow || !programmeInView || datePreview.hidden) return;
   const bounds = programme.getBoundingClientRect();
-  if (bounds.bottom < 0 || bounds.top > innerHeight) return;
-  const anchor = row.getBoundingClientRect();
-  const poster = preview.querySelector('.poster-stage').getBoundingClientRect();
-  const x = anchor.right - bounds.left + 5;
+  const anchor = activeRow.querySelector('.programme-arrow').getBoundingClientRect();
+  const poster = posterStage.getBoundingClientRect();
+  const x = anchor.left + anchor.width / 2 - bounds.left;
   const y = anchor.top + anchor.height / 2 - bounds.top;
-  const end = poster.left + poster.width / 2 - bounds.left;
-  const mid = poster.left + poster.width * .10 - bounds.left;
-  const target = poster.top + poster.height * .52 - bounds.top;
-  path.setAttribute('d', 'M '+x+' '+y+' C '+mid+' '+y+' '+(mid-8)+' '+target+' '+(mid+24)+' '+target+
-    ' q 8 0 12 -7 t 12 1 t 14 6 H '+end);
+  const end = poster.left - bounds.left - 5;
+  const target = poster.top + poster.height * .64 - bounds.top;
+  const bend = (end - x) * .63;
+  datePath.setAttribute('d', 'M ' + x + ' ' + y + ' C ' + (x + bend) + ' ' + y + ', ' +
+    (end - bend) + ' ' + target + ', ' + end + ' ' + target);
 }
 function scheduleDateTrace() {
-  if (!traceFrame) traceFrame = requestAnimationFrame(drawDateTrace);
+  if (programmeInView && !compactDates.matches && !traceFrame) traceFrame = requestAnimationFrame(drawDateTrace);
 }
-window.addEventListener('scroll', scheduleDateTrace, {passive: true});
-new ResizeObserver(scheduleDateTrace).observe(programme);
+function followDateTrace() {
+  window.removeEventListener('scroll', scheduleDateTrace);
+  if (programmeInView && !compactDates.matches) {
+    window.addEventListener('scroll', scheduleDateTrace, {passive: true});
+    scheduleDateTrace();
+  }
+}
+new IntersectionObserver(([entry]) => {
+  programmeInView = entry.isIntersecting;
+  followDateTrace();
+}).observe(programme);
+const dateSize = new ResizeObserver(scheduleDateTrace);
+dateSize.observe(programme);
+dateSize.observe(posterStage);
 
 function previewDate(item) {
+  if (compactDates.matches) {
+    previewEvent = item;
+    return;
+  }
   if (previewEvent === item) return;
   previewEvent = item;
   const title = translated(item, 'title');
-  const preview = byId('event-preview');
-  const stage = element('span', 'poster-stage');
-  stage.append(artwork(item, item.file, ''));
-  const plate = element('span', 'preview-plate');
-  plate.append(stage, element('span', 'poster-note', translated(item, 'caption')));
-  preview.replaceChildren(plate);
-  preview.setAttribute('aria-label', local('Ouvrir la fiche', 'Open event') + ' · ' + title);
-  Array.from(byId('event-grid').children).forEach((row, index) => {
-    row.classList.toggle('current', visibleEvents[index] === item);
-  });
+  const image = posterImage(item, 'preview');
+  const present = () => {
+    if (previewEvent !== item || datePreview.hidden) return;
+    datePreview.style.setProperty('--poster-ratio', item.posterSize ? item.posterSize[0] / item.posterSize[1] : 1);
+    posterStage.replaceChildren(image);
+    posterNote.textContent = translated(item, 'caption');
+    datePreview.setAttribute('aria-label', local('Ouvrir la fiche', 'Open event') + ' · ' + title);
+    displayedDate = item;
+    scheduleDateTrace();
+  };
+  // Une frappe rapide peut changer de date pendant le décodage du tirage précédent.
+  if (programmeInView && posterStage.childElementCount && image.decode) image.decode().then(present, present);
+  else present();
+  activeRow?.classList.remove('current');
+  activeRow = dateGrid.children[visibleEvents.indexOf(item)];
+  activeRow.classList.add('current');
+  pulseAnimation?.cancel();
+  if (programmeInView && !quietDates.matches) {
+    pulseAnimation = tracePulse.animate([{strokeDashoffset: '.18', opacity: 0}, {opacity: 1, offset: .28},
+      {strokeDashoffset: '-1', opacity: 0}], {duration: 480, easing: 'ease-out'});
+  }
   scheduleDateTrace();
 }
 
 function openDate(item) {
   openedEvent = item;
   previewDate(item);
+  if (compactDates.matches) moveDateCard(visibleEvents.indexOf(item));
   byId('event-position').textContent = (visibleEvents.indexOf(item) + 1) + ' / ' + visibleEvents.length;
   byId('event-prev').disabled = byId('event-next').disabled = visibleEvents.length < 2;
   showModal(item, translated(item, 'title'), item.tag + ' · ' + item.artist, translated(item, 'meta'));
@@ -237,7 +347,7 @@ function stepDate(direction) {
   const index = visibleEvents.indexOf(openedEvent);
   openDate(visibleEvents[(index + direction + visibleEvents.length) % visibleEvents.length]);
 }
-byId('event-preview').onclick = () => openDate(previewEvent);
+datePreview.onclick = () => openDate(displayedDate || previewEvent);
 byId('event-prev').onclick = () => stepDate(-1);
 byId('event-next').onclick = () => stepDate(1);
 modal.addEventListener('keydown', e => {
@@ -265,6 +375,7 @@ modalArt.addEventListener('pointercancel', () => { swipeStart = null; });
 function renderEvents() {
   const grid = byId('event-grid');
   const previous = previewEvent;
+  const compact = compactDates.matches;
   grid.replaceChildren();
   visibleEvents = events.filter(e => selectedEvent === 'all' || e.category === selectedEvent);
   for (const item of visibleEvents) {
@@ -277,30 +388,75 @@ function renderEvents() {
     arrow.setAttribute('aria-hidden', 'true');
     row.append(element('span', 'programme-date', date), copy, arrow);
     row.setAttribute('aria-haspopup', 'dialog');
-    row.onpointermove = e => { if (e.pointerType === 'mouse') previewDate(item); };
-    row.onfocus = () => previewDate(item);
+    if (compact) {
+      const frame = element('span', 'date-cover');
+      frame.append(posterImage(item, 'card'));
+      row.prepend(frame);
+      row.append(element('span', 'date-caption', translated(item, 'caption')));
+    } else {
+      row.onpointerenter = e => { if (e.pointerType === 'mouse' || e.pointerType === 'pen') previewDate(item); };
+      row.onfocus = () => previewDate(item);
+    }
     row.onclick = () => openDate(item);
     grid.append(row);
   }
   previewEvent = null;
-  byId('event-preview').hidden = !visibleEvents.length;
-  if (visibleEvents.length) previewDate(visibleEvents.includes(previous) ? previous : visibleEvents[0]);
-}
-
-function renderReleases() {
-  const grid = byId('release-grid');
-  grid.replaceChildren();
-  const dateFormat = new Intl.DateTimeFormat(lang, {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'});
-  for (const r of releases.filter(r => selectedRelease === 'all' || selectedRelease === r.type || (selectedRelease === 'vinyl' && r.isVinyl))) {
-    const frame = picture(r, r.title, 'disc-frame', r.format, r.isVinyl ? 'vinyl' : r.type);
-    const reference = r.cat || 'Void X Series';
-    const date = dateFormat.format(new Date(r.date + 'T00:00:00Z'));
-    card(grid, frame, reference + ' · ' + date, r.title, r.artist, i18nDict[lang].card_more_release,
-      () => showModal(r, r.title, reference + ' · ' + r.artist, translated(r, 'meta'), r.link, 'Bandcamp'));
+  activeRow = null;
+  datePreview.hidden = compact || !visibleEvents.length;
+  if (datePreview.hidden) {
+    datePath.removeAttribute('d');
+    posterStage.replaceChildren();
+  }
+  followDateTrace();
+  dateControls.hidden = !compact || visibleEvents.length < 2;
+  previousDate.setAttribute('aria-label', local('Date précédente', 'Previous event'));
+  nextDate.setAttribute('aria-label', local('Date suivante', 'Next event'));
+  if (compact) {
+    currentCard = -1;
+    dateMeter.style.setProperty('--date-total', visibleEvents.length);
+    moveDateCard(Math.max(0, visibleEvents.indexOf(previous)));
+    updateDateControls(true);
+  } else if (visibleEvents.length) {
+    previewDate(visibleEvents.includes(previous) ? previous : visibleEvents[0]);
   }
 }
 
+const initialReleaseCount = 4;
+const shortCatalogue = matchMedia('(max-width: 640px)');
+let catalogueExpanded = false;
+const expandCatalogue = byId('catalogue-expand');
+expandCatalogue.onclick = () => {
+  catalogueExpanded = true;
+  renderReleases(true);
+  byId('release-grid').children[initialReleaseCount]?.focus({preventScroll: true});
+};
+function renderReleases(append = false) {
+  const grid = byId('release-grid');
+  const matches = releases.filter(r => selectedRelease === 'all' || selectedRelease === r.type || (selectedRelease === 'vinyl' && r.isVinyl));
+  const compact = shortCatalogue.matches && selectedRelease === 'all' && !catalogueExpanded;
+  const visible = compact ? matches.slice(0, initialReleaseCount) : matches;
+  const remaining = matches.length - visible.length;
+  expandCatalogue.hidden = remaining === 0;
+  expandCatalogue.textContent = local('Voir les ' + remaining + ' autres sorties', 'Show ' + remaining + ' more releases');
+  const cards = document.createDocumentFragment();
+  const dateFormat = new Intl.DateTimeFormat(lang, {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'});
+  for (const r of visible.slice(append ? grid.childElementCount : 0)) {
+    const frame = picture(r, r.title, 'disc-frame', r.format, r.isVinyl ? 'vinyl' : r.type);
+    const reference = r.cat || 'Void X Series';
+    const date = dateFormat.format(new Date(r.date + 'T00:00:00Z'));
+    card(cards, frame, reference + ' · ' + date, r.title, r.artist, i18nDict[lang].card_more_release,
+      () => showModal(r, r.title, reference + ' · ' + r.artist, translated(r, 'meta'), r.link, 'Bandcamp'));
+  }
+  if (append) grid.append(cards);
+  else grid.replaceChildren(cards);
+}
+shortCatalogue.addEventListener('change', () => renderReleases());
+
+const archivePanel = document.querySelector('.show-archive');
+let archiveLang;
 function renderArchive() {
+  if (!archivePanel.open || archiveLang === lang) return;
+  archiveLang = lang;
   const container = byId('archive-years');
   container.replaceChildren();
   const format = new Intl.DateTimeFormat(lang, {day: '2-digit', month: 'short', timeZone: 'UTC'});
@@ -322,6 +478,7 @@ function renderArchive() {
     list.append(row);
   }
 }
+archivePanel.addEventListener('toggle', renderArchive);
 function renderRoster() {
   const grid = byId('roster-grid');
   grid.replaceChildren();
@@ -340,16 +497,23 @@ function renderPodcasts() {
     button.append(element('span', 'card-tag', p.tag), element('h3', '', p.title),
       element('p', '', translated(p, 'desc')), element('span', 'card-footer-meta', i18nDict[lang].card_open_sc));
     button.setAttribute('aria-controls', 'sc-drawer');
+    button.setAttribute('aria-expanded', 'false');
     if (p.festivalLive) button.id = 'festival-podcast';
     button.onclick = () => {
-      audio.pause();
+      if (drawerButton === button && drawer.classList.contains('active')) {
+        closeDrawer();
+        return;
+      }
+      drawerButton?.setAttribute('aria-expanded', 'false');
+      previewPlayer.pause();
       drawerButton = button;
+      button.setAttribute('aria-expanded', 'true');
       const iframe = element('iframe');
       iframe.title = 'SoundCloud · ' + p.title;
       iframe.width = '100%';
       iframe.height = '166';
       iframe.allow = 'autoplay';
-      iframe.src = 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(p.scUrl) + '&color=%2338d9a9&auto_play=false&show_comments=false';
+      iframe.src = 'https://w.soundcloud.com/player/?url=' + encodeURIComponent(p.scUrl) + '&color=%23d9ef9a&auto_play=false&show_comments=false';
       const direct = element('a', 'btn-ghost', local('Écouter sur SoundCloud ↗', 'Listen on SoundCloud ↗'));
       direct.href = p.scUrl;
       direct.target = '_blank';
@@ -364,6 +528,7 @@ function renderPodcasts() {
 function closeDrawer() {
   byId('sc-iframe-wrap').replaceChildren();
   drawer.classList.remove('active');
+  drawerButton?.setAttribute('aria-expanded', 'false');
 }
 byId('sc-drawer-close').onclick = () => { closeDrawer(); drawerButton?.focus(); };
 
@@ -374,6 +539,7 @@ function galleryIndex() {
 }
 function updateCounter() {
   const count = gallery.children.length;
+  if (!count) return;
   byId('carousel-counter').textContent = [galleryIndex() + 1, count].map(n => String(n).padStart(2, '0')).join(' / ');
   byId('carousel-prev').disabled = gallery.scrollLeft < 1;
   byId('carousel-next').disabled = gallery.scrollLeft + gallery.clientWidth >= gallery.scrollWidth - 1;
@@ -413,64 +579,10 @@ for (const selector of ['#event-filters', '#catalogue .filters']) {
   }
 }
 
-function syncPlayer() {
-  byId('player').hidden = !currentTrack;
-  if (!currentTrack) return;
-  const playing = !audio.paused && !audio.ended && !playbackError;
-  byId('btn-play').textContent = playing ? '❚❚' : '▶';
-  byId('btn-play').setAttribute('aria-label', playing ? 'Pause' : local('Écouter', 'Play'));
-  byId('player').classList.toggle('playing', playing);
-  trackSelect.value = currentTrack.cat;
-  byId('btn-next').hidden = playlist.length < 2;
-  byId('cur-cat').textContent = playbackError ? local('Lecture indisponible', 'Playback unavailable') : currentTrack.cat;
-}
-async function playTrack(track) {
-  closeDrawer();
-  currentTrack = track;
-  playbackError = false;
-  if (audio.getAttribute('src') !== track.audioFile) audio.src = track.audioFile;
-  prepareAnalysis(track.spectrum);
-  try { await audio.play(); }
-  catch (error) { if (track === currentTrack && error.name !== 'AbortError') playbackError = true; }
-  syncPlayer();
-}
-byId('btn-next').onclick = () => {
-  const next = (playlist.indexOf(currentTrack) + 1) % playlist.length;
-  playTrack(playlist[next]);
-};
-byId('btn-play').onclick = () => audio.paused ? playTrack(currentTrack) : audio.pause();
-for (const event of ['play', 'pause', 'ended']) audio.addEventListener(event, syncPlayer);
-audio.addEventListener('error', () => { playbackError = true; syncPlayer(); });
-function time(seconds) {
-  return Math.floor(seconds / 60) + ':' + String(Math.floor(seconds % 60)).padStart(2, '0');
-}
-function syncTime() {
-  const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
-  const seek = byId('seek');
-  seek.disabled = !duration;
-  seek.max = duration;
-  seek.value = audio.currentTime;
-  seek.setAttribute('aria-valuetext', time(audio.currentTime) + ' / ' + time(duration));
-  byId('time-cur').textContent = time(audio.currentTime);
-  byId('time-dur').textContent = time(duration);
-}
-for (const event of ['timeupdate', 'loadedmetadata', 'emptied']) audio.addEventListener(event, syncTime);
-byId('seek').oninput = e => { audio.currentTime = Number(e.target.value); };
-
-const menu = byId('menu-toggle');
-function setMenu(open) {
-  menu.setAttribute('aria-expanded', open);
-  byId('sections').classList.toggle('open', open);
-}
-menu.onclick = () => setMenu(menu.getAttribute('aria-expanded') !== 'true');
-byId('sections').onclick = () => setMenu(false);
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && menu.getAttribute('aria-expanded') === 'true') { setMenu(false); menu.focus(); }
-});
 function render() {
   document.documentElement.lang = lang;
   for (const el of document.querySelectorAll('[data-i18n]')) el.innerHTML = i18nDict[lang][el.dataset.i18n];
-  byId('lang-toggle').textContent = local('FR / EN', 'EN / FR');
+  byId('lang-toggle').lang = local('en', 'fr');
   byId('lang-toggle').setAttribute('aria-label', local('Switch to English', 'Passer en français'));
   byId('event-prev').setAttribute('aria-label', local('Date précédente', 'Previous event'));
   byId('event-next').setAttribute('aria-label', local('Date suivante', 'Next event'));
@@ -478,60 +590,11 @@ function render() {
   byId('modal-close-btn').setAttribute('aria-label', local('Fermer', 'Close'));
   byId('carousel-prev').setAttribute('aria-label', local('Photo précédente', 'Previous photograph'));
   byId('carousel-next').setAttribute('aria-label', local('Photo suivante', 'Next photograph'));
-  byId('seek').setAttribute('aria-label', local('Position de lecture', 'Playback position'));
   byId('nav-count-releases').textContent = releases.length;
   document.querySelectorAll('[data-i18n="bannerReleases"]').forEach(el => {
     el.textContent = releases.length + ' ' + i18nDict[lang].bannerReleases;
   });
-  renderArchive(); renderEvents(); renderReleases(); renderRoster(); renderPodcasts(); renderGallery(); syncPlayer(); syncTime();
+  renderArchive(); renderEvents(); renderReleases(); renderRoster(); renderPodcasts(); renderGallery(); previewPlayer.refresh();
 }
 byId('lang-toggle').onclick = () => { closeDrawer(); lang = local('en', 'fr'); render(); };
 render();
-
-// Le sommaire suit le chapitre qui passe sous le bandeau de navigation.
-const sectionLinks = Array.from(byId('sections').querySelectorAll('a'));
-const sections = sectionLinks.map(link => document.querySelector(link.hash));
-const nav = byId('sections');
-const masthead = nav.closest('header');
-let inspectedLink = null;
-function positionRail() {
-  const active = nav.querySelector('[aria-current]');
-  const target = inspectedLink || active;
-  const visible = target && target.offsetWidth && !menu.offsetWidth;
-  const fraction = target ? (sectionLinks.indexOf(target) + .5) / sectionLinks.length : .09;
-  const box = visible && target.getBoundingClientRect();
-  const x = box ? box.left + box.width / 2 : masthead.clientWidth * fraction;
-  masthead.style.setProperty('--nav-x', x + 'px');
-  masthead.style.setProperty('--nav-span', (box ? box.width + 20 : 52) + 'px');
-}
-for (const link of sectionLinks) {
-  link.addEventListener('pointerenter', e => {
-    if (e.pointerType === 'mouse') { inspectedLink = link; positionRail(); }
-  });
-  link.addEventListener('focus', () => { inspectedLink = link; positionRail(); });
-}
-function releaseRail() { inspectedLink = null; positionRail(); }
-nav.addEventListener('pointerleave', releaseRail);
-nav.addEventListener('focusout', releaseRail);
-byId('lang-toggle').addEventListener('click', positionRail);
-document.fonts.ready.then(positionRail);
-let navFrame = 0;
-function highlightSection() {
-  navFrame = 0;
-  const limit = innerHeight * 0.35;
-  let active = -1;
-  sections.forEach((section, index) => {
-    if (section.getBoundingClientRect().top <= limit) active = index;
-  });
-  sectionLinks.forEach((link, index) => {
-    if (index === active) link.setAttribute('aria-current', 'location');
-    else link.removeAttribute('aria-current');
-  });
-  positionRail();
-}
-function scheduleHighlight() {
-  if (!navFrame) navFrame = requestAnimationFrame(highlightSection);
-}
-window.addEventListener('scroll', scheduleHighlight, { passive: true });
-window.addEventListener('resize', scheduleHighlight);
-highlightSection();
