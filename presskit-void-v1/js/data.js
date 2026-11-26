@@ -18,7 +18,6 @@ const i18nDict = {
     liveSet: "Ramona Yacef à Château Perché ↗",
     archive: "Explorer les dates passées",
     choosePreview: "Choisir un extrait", nextPreview: "Suivant",
-    extraShows: "Les archives Shotgun couvrent une partie de nos dates. Pour la Fête de la musique et pour Kiosque en Fête, organisé par la Ville de Paris, nous avons aussi proposé des open airs gratuits. Au belvédère de Belleville, le public du collectif et les habitants du quartier pouvaient écouter les sets sur place, sans billet.",
 
     brand: "PARIS // DEPUIS 2017",
     bannerDates: "CLUB / LIVE / OPEN AIR",
@@ -78,7 +77,6 @@ const i18nDict = {
     liveSet: "Ramona Yacef at Château Perché ↗",
     archive: "Explore past dates",
     choosePreview: "Choose a preview", nextPreview: "Next",
-    extraShows: "The Shotgun archive covers part of our programme. We have also put on free open airs for Fête de la musique and the City of Paris’s Kiosque en Fête. At the Belleville belvedere, regulars and neighbours could stop and listen to the sets without a ticket.",
 
     brand: "PARIS // EST. 2017",
     bannerDates: "CLUB / LIVE / OPEN AIR",
